@@ -14,5 +14,7 @@ Quick overview:
 -	Charging over Qi Wireless charging
 -	One user-button
 
+More info on my website:
+https://wizeus.de/
 See Thingiverse for the 3D Models and other information. The models are in this repository too.
 https://www.thingiverse.com/thing:3985290
