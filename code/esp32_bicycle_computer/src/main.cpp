@@ -381,13 +381,14 @@ void read_sensors() {
 	Serial.print(humid, 1);
 	Serial.println("%");*/
 
-	byte decimal_places = 2;
+	int decimal_places = 2;
 	if (temp >= 10 || temp <= -10) {
 		decimal_places = 1;
 	}
 	if (temp >= 100 || temp <= -100) {
 		decimal_places = 0;
 	}
+
 
 	sensor_comb = String(temp, decimal_places) + "C " + String(humid, 0) + "%";
 }
