@@ -14,7 +14,7 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include <U8g2lib.h>
-#include <SparkFunHTU21D.h>
+#include <HTU2xD_SHT2x_Si70xx.h>
 #include <RtcDS3231.h>
 
 #include <Time.h>
@@ -146,7 +146,8 @@ gps_mapper_struct mapper;
 stat_display_data_struct stats;
 
 U8G2_ST7565_ERC12864_ALT_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/LCD_CS, /* dc=*/LCD_DC, /* reset=*/-1); // contrast improved version for ERC12864
-HTU21D myHumidity;
+//HTU21D myHumidity; //deprecated
+HTU2xD_SHT2x_SI70xx ht2x(HTU2xD_SENSOR, HUMD_12BIT_TEMP_14BIT); //sensor type, resolution
 RtcDS3231<TwoWire> Rtc(Wire);
 TinyGPSPlus gps;
 SdFat sd;
@@ -247,7 +248,7 @@ void setup()
 	Serial.printf("Compile date and time: %s, %s.\n\n", __DATE__, __TIME__);
 
 	Rtc.Begin();
-	myHumidity.begin();
+	ht2x.begin();
 	u8g2.begin();
 	u8g2.setContrast(LCD_CONTRAST);
 
@@ -312,6 +313,7 @@ void setup()
 #ifdef ENABLE_PREFERENCES
 	log_reset_times();
 #endif
+	Serial.println("Setup done");
 }
 
 void loop()
@@ -349,6 +351,7 @@ void loop()
 
 		loop_timing = millis();
 	}
+
 	if (millis() - loop_timing_2 >= 10)
 	{ // Run this every 10ms
 		// Dim Screen Backlight
@@ -359,14 +362,15 @@ void loop()
 	// Update GPS Data
 	update_gps();
 
+#ifdef ENABLE_PREFERENCES
 	// Execute code if GPS has a fix
 	if (check_gps_fix())
 	{
-#ifdef ENABLE_PREFERENCES
+
 		calculate_max();
 		calculate_total_dist();
-#endif
 	}
+#endif
 
 	// Check for button press
 	if (button_data)
@@ -396,8 +400,8 @@ float read_battery_voltage()
 
 void read_sensors()
 {
-	humid = myHumidity.readHumidity();
-	temp = myHumidity.readTemperature();
+	humid = ht2x.readHumidity();
+	temp = ht2x.readTemperature();
 
 	/*Serial.print(" Temperature:");
 	Serial.print(temp, 1);
@@ -1530,8 +1534,8 @@ bool sd_log_data()
 			file.printf("%i:%i:%i,", gps.time.hour(), gps.time.minute(), gps.time.second());
 			file.printf("%6.3f,", gps.speed.kmph());
 			file.printf("%i,", gps.satellites.value());
-			file.printf("%5.2f,", myHumidity.readTemperature());
-			file.printf("%5.2f,", myHumidity.readHumidity());
+			file.printf("%5.2f,", ht2x.readTemperature());
+			file.printf("%5.2f,", ht2x.readHumidity());
 			file.printf("%i,", analogRead(ldr_pin));
 			file.printf("%5.2f,", gps_data.travel_distance_km);
 			file.print("\n");
