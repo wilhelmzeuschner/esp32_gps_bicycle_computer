@@ -16,13 +16,12 @@
 #include <U8g2lib.h>
 #include <HTU2xD_SHT2x_Si70xx.h>
 #include <RtcDS3231.h>
+#include <TinyGPS++.h>
+#include <SdFat.h>
+#include <sdios.h>
 
 #include <Time.h>
 
-#include <TinyGPS++.h>
-
-#include <SdFat.h>
-#include <sdios.h>
 
 #ifdef ENABLE_PREFERENCES
 #include <Preferences.h>
@@ -191,6 +190,7 @@ void draw_gps_path();
 void measure_distance_gps();
 void update_gps_data();
 void update_gps();
+void calc_avg_speed();
 void display_gps_info();
 
 // This function calls the apppropriate GUI drawing function
@@ -341,7 +341,10 @@ void loop()
 		read_sensors();
 		rtc_time();
 
-		if (SD_present)
+		// Calculate average speed
+		calc_avg_speed();
+
+		if (SD_present && gps_data.speed > 0)
 		{
 			digitalWrite(DISABLE_CHIP_SELECT, HIGH);
 			digitalWrite(SD_CHIP_SELECT, LOW);
@@ -1091,7 +1094,15 @@ void update_gps_data()
 {
 	if (gps.speed.age() < 1000)
 	{
-		gps_data.speed = gps.speed.kmph();
+		// Display "0" as speed if it's lower than the threshold
+		if (gps_data.speed < GPS_SPEED_DISPLAY_THRESH)
+		{
+			gps_data.speed = 0;
+		}
+		else
+		{
+			gps_data.speed = gps.speed.kmph();
+		}
 	}
 	else
 	{
@@ -1144,10 +1155,27 @@ void update_gps()
 
 	// Update GPS Data struct
 	update_gps_data();
-#ifdef ENABLE_TRIP_VISUALIZER
+
 	// Calculate Distance
 	measure_distance_gps();
-#endif
+}
+
+void calc_avg_speed()
+{
+	static unsigned long last_call_time = 0;
+	static unsigned long total_valid_time = 0.1; // Time where speed was > 0; can't be 0 because of division
+	unsigned long delta_time = 0;
+
+	// Only calculate average, if speed was greater than zero
+	if (gps_data.speed > 0.0)
+	{
+		delta_time = millis() - last_call_time;
+		last_call_time = millis();
+
+		stats.avg_speed = (gps_data.travel_distance_km / total_valid_time) * 1000 * 3600; // km per ms -> km/h
+
+		total_valid_time += delta_time;
+	}
 }
 
 void display_gps_info()
@@ -1297,9 +1325,16 @@ void update_display()
 		u8g2.print("microSD: X");
 
 	// Display Course
+	/*
 	u8g2.setFont(u8g2_font_t0_12_tr);
 	u8g2.setCursor(0, 24);
-	u8g2.print("Course: " + String(gps.cardinal(gps_data.course)));
+	u8g2.print("Course: " + String(gps.cardinal(gps_data.course)));*/
+
+	//Display runtime
+	u8g2.setFont(u8g2_font_t0_12_tr);
+	u8g2.setCursor(0, 24);
+	on_time_helper(true);
+	u8g2.print(time_running);
 
 	// Display Time
 	u8g2.setFont(u8g2_font_t0_12_tr);
@@ -1346,10 +1381,50 @@ void update_display()
 		u8g2.print("Lng:" + String(gps.location.lng(), 3));
 	}
 
-	// Display travelled Distance
-	u8g2.setFont(u8g2_font_9x18B_tf);
+	// Display travelled Distance and average speed
+
 	u8g2.setCursor(0, u8g2.getDisplayHeight());
-	u8g2.print("Dist.:" + String(gps_data.travel_distance_km, 2) + "km");
+	// Draw sum and average symbols
+	u8g2.setFont(u8g2_font_unifont_t_greek);
+	u8g2.drawGlyph(0, u8g2.getDisplayHeight(), 0x03a3);
+	u8g2.setCursor(6, u8g2.getDisplayHeight());
+	u8g2.print(":");
+	u8g2.drawGlyph(u8g2.getDisplayWidth() / 2, u8g2.getDisplayHeight(), 0x0030);
+	u8g2.setCursor(u8g2.getDisplayWidth() / 2 + 6, u8g2.getDisplayHeight());
+	u8g2.print(":");
+
+	// Total distance
+	int decimal_places = 2;
+	if (gps_data.travel_distance_km >= 100.0)
+	{
+		decimal_places = 0;
+	}
+	else if (gps_data.travel_distance_km >= 10.0)
+	{
+		decimal_places = 1;
+	}
+	u8g2.setFont(u8g2_font_8x13B_tr);
+	u8g2.setCursor(13, u8g2.getDisplayHeight());
+	u8g2.print(String(gps_data.travel_distance_km, decimal_places));
+	u8g2.setFont(u8g2_font_6x13_mr);
+	u8g2.print("km");
+
+	// Average speed
+	decimal_places = 2;
+	if (stats.avg_speed >= 100.0)
+	{
+		decimal_places = 0;
+	}
+	else if (stats.avg_speed >= 10.0)
+	{
+		decimal_places = 1;
+	}
+
+	u8g2.setFont(u8g2_font_8x13B_tr);
+	u8g2.setCursor(u8g2.getDisplayWidth() / 2 + 13, u8g2.getDisplayHeight());
+	u8g2.print(String(stats.avg_speed, decimal_places));
+	u8g2.setFont(u8g2_font_6x13_mr);
+	u8g2.print("kmh");
 
 	////////////////////
 	u8g2.sendBuffer();

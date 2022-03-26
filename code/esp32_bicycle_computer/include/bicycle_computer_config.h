@@ -45,4 +45,6 @@ const byte DISABLE_CHIP_SELECT = LCD_CS;
 const byte rfid_reset = 12;
 #endif
 
+#define GPS_SPEED_DISPLAY_THRESH	2	 //If speed is below GPS_SPEED_DISPLAY_THRESH, display 0 and don't log this speed / calculate the average based on it
+
 #endif
