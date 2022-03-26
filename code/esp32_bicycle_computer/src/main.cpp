@@ -122,7 +122,7 @@ struct gps_mapper_struct
 
 	/*
 	These arrays contain vectors that should all be longer than 10m.
-	They make up the final segments of the visulization.
+	They make up the final segments of the visualization.
 	*/
 	double path_x_array[4000];
 	double path_y_array[4000];
@@ -146,8 +146,8 @@ gps_mapper_struct mapper;
 stat_display_data_struct stats;
 
 U8G2_ST7565_ERC12864_ALT_F_4W_HW_SPI u8g2(U8G2_R0, /* cs=*/LCD_CS, /* dc=*/LCD_DC, /* reset=*/-1); // contrast improved version for ERC12864
-//HTU21D myHumidity; //deprecated
-HTU2xD_SHT2x_SI70xx ht2x(HTU2xD_SENSOR, HUMD_12BIT_TEMP_14BIT); //sensor type, resolution
+// HTU21D myHumidity; //deprecated
+HTU2xD_SHT2x_SI70xx ht2x(HTU2xD_SENSOR, HUMD_12BIT_TEMP_14BIT); // sensor type, resolution
 RtcDS3231<TwoWire> Rtc(Wire);
 TinyGPSPlus gps;
 SdFat sd;
@@ -184,8 +184,10 @@ bool check_gps_fix();
 This function captures data and saves the path as vectors.
 It is called whenever the GPS coordinates are updated.
 */
+#ifdef ENABLE_TRIP_VISUALIZER
 void gps_mapper();
 void draw_gps_path();
+#endif
 void measure_distance_gps();
 void update_gps_data();
 void update_gps();
@@ -193,7 +195,9 @@ void display_gps_info();
 
 // This function calls the apppropriate GUI drawing function
 void gui_selector();
+#ifdef ENABLE_STATS_DISPLAY
 void draw_stats();
+#endif
 void update_display();
 
 #ifdef ENABLE_PREFERENCES
@@ -386,6 +390,17 @@ void loop()
 		{
 			gui_selection = 0;
 		}
+
+// Account for the fact that some screens might be unselected in the config
+#ifndef ENABLE_TRIP_VISUALIZER
+		if (gui_selection == 1)
+			gui_selection++;
+#endif
+#ifndef ENABLE_STATS_DISPLAY
+		if (gui_selection == 2)
+			gui_selection = 0;
+#endif
+
 		gui_selector();
 	}
 }
@@ -647,6 +662,7 @@ bool check_gps_fix()
 This function captures data and saves the path as vectors.
 It is called whenever the GPS coordinates are updated.
 */
+#ifdef ENABLE_TRIP_VISUALIZER
 void gps_mapper()
 {
 	int size_of_meter_array = sizeof(mapper.ten_meter_x_array) / sizeof(double);
@@ -671,7 +687,7 @@ void gps_mapper()
 		mapper.ten_meter_x_array[mapper.ten_counter] = x_component;
 		mapper.ten_meter_y_array[mapper.ten_counter] = y_component;
 
-		// Increment Counter for meter array (or reset it if the end of the array is reaced
+		// Increment Counter for meter array (or reset it if the end of the array is reached)
 		if (mapper.ten_counter < (size_of_meter_array - 1))
 		{
 			mapper.ten_counter += 1;
@@ -892,7 +908,7 @@ void draw_gps_path()
 	x_span = x_max + abs(x_min);
 	y_span = y_max + abs(y_min);
 
-	// Only draw the path if the data is present (path lenght is not 0)
+	// Only draw the path if the data is present (path length is not 0)
 	bool path_valid = 0;
 	if (x_span != 0 || y_span != 0)
 	{
@@ -952,7 +968,7 @@ void draw_gps_path()
 		int x_coord_start = 0, y_coord_start = 0;
 		int x_coord_end = 0, y_coord_end = 0;
 
-		// Coordniates for the drawLine() function
+		// Coordinates for the drawLine() function
 		int current_x_begin = start_x;
 		int current_y_begin = start_y;
 		int current_x_end = start_x;
@@ -963,7 +979,7 @@ void draw_gps_path()
 		for (unsigned int i = 0; i < size_of_display_array; i++)
 		{
 
-			// Calculate relative lenght of specific new vector
+			// Calculate relative length of specific new vector
 			x_coord_start = map(mapper.path_x_array[i] * amp_factor, x_min, x_max, 63, 127);
 			y_coord_start = map(mapper.path_y_array[i] * amp_factor, y_min, y_max, 63, 0);
 			x_coord_end = map(mapper.path_x_array[i + 1] * amp_factor, x_min, x_max, 63, 127);
@@ -1033,6 +1049,7 @@ void draw_gps_path()
 
 	u8g2.sendBuffer();
 }
+#endif
 
 void measure_distance_gps()
 {
@@ -1062,8 +1079,10 @@ void measure_distance_gps()
 			Serial.println(gps.location.lat(), 6);
 			Serial.println(gps.location.lng(), 6);*/
 
+#ifdef ENABLE_TRIP_VISUALIZER
 			// There was an update to the data, so call the mapper function
 			gps_mapper();
+#endif
 		}
 	}
 }
@@ -1125,8 +1144,10 @@ void update_gps()
 
 	// Update GPS Data struct
 	update_gps_data();
+#ifdef ENABLE_TRIP_VISUALIZER
 	// Calculate Distance
 	measure_distance_gps();
+#endif
 }
 
 void display_gps_info()
@@ -1199,16 +1220,21 @@ void gui_selector()
 	{
 		update_display();
 	}
+#ifdef ENABLE_TRIP_VISUALIZER
 	else if (gui_selection == 1)
 	{
 		draw_gps_path();
 	}
+#endif
+#ifdef ENABLE_STATS_DISPLAY
 	else if (gui_selection == 2)
 	{
 		draw_stats();
 	}
+#endif
 }
 
+#ifdef ENABLE_STATS_DISPLAY
 void draw_stats()
 {
 	u8g2.clearBuffer();
@@ -1249,6 +1275,7 @@ void draw_stats()
 
 	u8g2.sendBuffer();
 }
+#endif
 
 void update_display()
 {

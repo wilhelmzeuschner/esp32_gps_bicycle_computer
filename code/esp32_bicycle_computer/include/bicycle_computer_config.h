@@ -3,13 +3,20 @@
 
 #include <Arduino.h>
 
+// Optional features
+//#define 	ENABLE_OTA
+//#define 	USE_RFID
+//#define	ENABLE_TRIP_VISUALIZER
+//#define 	ENABLE_STATS_DISPLAY
+
+
+
 #define DEBUG			//Print out debug messages
 #define USE_REAL_ARRAY		//GPS Path mapper uses corrent array
 #define PC_SERIAL	115200	//Serial Baud rate for connection between PC (USB to UART) and ESP32
-//#define ENABLE_OTA			//Optional, for OTA Programming
 #define MIN_NO_SAT		3	//Min number of satellites necessary for stats
 #define UTC_ADJ			2	//Adjustment for your particular time zone
-//#define USE_RFID
+
 
 #define SD_SPEED		10		//SD Clock Speed (in MHz)
 #define LCD_CONTRAST	75
