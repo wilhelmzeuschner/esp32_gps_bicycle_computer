@@ -47,4 +47,8 @@ const byte rfid_reset = 12;
 
 #define GPS_SPEED_DISPLAY_THRESH	2	 //If speed is below GPS_SPEED_DISPLAY_THRESH, display 0 and don't log this speed / calculate the average based on it
 
+#define LDR_DARK_VAL				700		//Higher means: turns on when it's even darker
+#define LDR_HYSTERESIS				200
+#define DARK_PWM_VAL				10
+
 #endif

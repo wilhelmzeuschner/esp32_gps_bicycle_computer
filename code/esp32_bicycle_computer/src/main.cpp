@@ -22,7 +22,6 @@
 
 #include <Time.h>
 
-
 #ifdef ENABLE_PREFERENCES
 #include <Preferences.h>
 #endif
@@ -502,36 +501,21 @@ String zero_padder(String z_p)
 // Dim the backlight according to the LDR reading and apply a low pass filter
 void ldr_dimmer()
 {
+	static int prev_state = 0;
 	ldr_reading = analogRead(ldr_pin);
 
-	if (ldr_reading < 500)
+	if (ldr_reading <= LDR_DARK_VAL /*&& prev_state == 0 || ldr_reading < LDR_DARK_VAL - LDR_HYSTERESIS*/)
 	{ // Very dark
-		if (pwm_value > 100)
-			pwm_value = pwm_value * 0.99;
+		pwm_value = DARK_PWM_VAL;
+		prev_state = 0;
 	}
-	else if (ldr_reading < 1500)
-	{ // Dark
-		if (pwm_value > 800)
-			pwm_value = pwm_value * 0.99;
-		else if (pwm_value < 800)
-			pwm_value = pwm_value * 1.02;
-	}
-	else if (ldr_reading < 2200)
-	{ // Slightly dark
-		if (pwm_value > 1800)
-			pwm_value = pwm_value * 0.99;
-		else if (pwm_value < 1800)
-			pwm_value = pwm_value * 1.02;
-	}
-
-	ledcWrite(ledChannel, pwm_value / 10);
-
-	// It's so bright that no backlight is necessary
-	if (ldr_reading >= 2200)
+	else if (ldr_reading > LDR_DARK_VAL && prev_state == 1 || ldr_reading > LDR_DARK_VAL + LDR_HYSTERESIS)
 	{
-		ledcWrite(ledChannel, 0);
-		pwm_value = 100;
+		pwm_value = 0;
+		prev_state = 1;
 	}
+
+	ledcWrite(ledChannel, pwm_value);
 }
 
 /*IRAM_ATTR*/
@@ -1330,7 +1314,7 @@ void update_display()
 	u8g2.setCursor(0, 24);
 	u8g2.print("Course: " + String(gps.cardinal(gps_data.course)));*/
 
-	//Display runtime
+	// Display runtime
 	u8g2.setFont(u8g2_font_t0_12_tr);
 	u8g2.setCursor(0, 24);
 	on_time_helper(true);
