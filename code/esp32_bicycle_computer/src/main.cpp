@@ -639,7 +639,7 @@ bool check_gps_fix()
 	if (gps.satellites.value() >= MIN_NO_SAT)
 	{			 // If number is not 1 (which means no fix)
 		fix = 1; // a fix must be established, min no. of satellites must be reached
-		Serial.println("has fix");
+		//Serial.println("has fix");
 	}
 
 	return fix;
@@ -1079,7 +1079,7 @@ void update_gps_data()
 	if (gps.speed.age() < 1000)
 	{
 		// Display "0" as speed if it's lower than the threshold
-		if (gps_data.speed < GPS_SPEED_DISPLAY_THRESH)
+		if (gps.speed.kmph() < GPS_SPEED_DISPLAY_THRESH)
 		{
 			gps_data.speed = 0;
 		}
@@ -1159,6 +1159,10 @@ void calc_avg_speed()
 		stats.avg_speed = (gps_data.travel_distance_km / total_valid_time) * 1000 * 3600; // km per ms -> km/h
 
 		total_valid_time += delta_time;
+	}
+	else
+	{
+		last_call_time = millis();
 	}
 }
 
