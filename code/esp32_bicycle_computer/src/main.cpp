@@ -480,7 +480,7 @@ void on_time_helper(bool create_output)
 		seconds_running++; // Just log time
 	else
 	{
-		time_running = zero_padder(String(seconds_running / 3600)) + ":" + zero_padder(String(seconds_running / 3600 - (seconds_running / 3600) * 60))) + ":" + zero_padder(String(seconds_running - (seconds_running / 60) * 60));
+		time_running = zero_padder(String((seconds_running / 3600) % 3600)) + ":" + zero_padder(String((seconds_running / 60) % 60)) + ":" + zero_padder(String(seconds_running % 60));
 	}
 	/*Serial.println(time_running);
 	Serial.printf("on-time: %u\n", seconds_running);*/
