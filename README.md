@@ -18,3 +18,6 @@ More info on my website:
 https://wizeus.de/
 See Thingiverse for the 3D Models and other information. The models are in this repository too.
 https://www.thingiverse.com/thing:3985290
+
+
+![Mounted on my bike](https://raw.githubusercontent.com/wilhelmzeuschner/esp32_gps_bicycle_computer/master/images/IMG_20190411_172257.jpg)
